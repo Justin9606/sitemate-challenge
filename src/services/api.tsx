@@ -1,9 +1,12 @@
 import axios from 'axios';
 
+const ARTICLE_API_KEY = 'ddb7bd6495e7436f9bed691b844c0a4c';
+const BASE_URL = 'https://newsapi.org/v2';
+
 const api = axios.create({
-  baseURL: 'https://newsapi.org/v2',
-  headers: {
-    Authorization: '183daca270264bad86fc5b72972fb82a',
+  baseURL: BASE_URL,
+  params: {
+    apiKey: ARTICLE_API_KEY,
   },
 });
 

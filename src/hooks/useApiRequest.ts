@@ -14,12 +14,20 @@ const useApiRequest = <T>(endpoint: string, params: object): ApiHook<T> => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!params.q) {
+      setError("Query parameter 'q' is required");
+      setLoading(false);
+      return;
+    }
     const fetData = async () => {
       try {
         const response = await api.get<T>(endpoint, {params});
+        console.log();
         setData(response?.data);
-      } catch (err) {
-        setError(err?.message);
+      } catch (err: any) {
+        console.log('error fetching data >>> ', err);
+
+        setError(err.message);
       } finally {
         setLoading(false);
       }

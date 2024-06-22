@@ -11,9 +11,15 @@ import {Article} from '../types';
 
 const HomeScreen: React.FC = () => {
   const [query, setQuery] = useState<string>('');
+
+  const [searchQuery, setSearchQuery] = useState<string>('');
   const {data, loading, error} = useApiRequest<{article: Article[]}>(
     '/everything',
-    {q: query},
+    {
+      q: searchQuery,
+      from: '2024-06-22',
+      sortBy: 'publishedAt',
+    },
   );
 
   //showing alert if there is an error
@@ -31,6 +37,14 @@ const HomeScreen: React.FC = () => {
     setQuery(text);
   };
 
+  const handleSearchPress = () => {
+    if (query.trim()?.length === 0) {
+      Alert.alert('Oops!', 'Please enter some text to search', [{text: 'Ok'}]);
+      return;
+    }
+    setSearchQuery(query);
+  };
+
   return (
     <Container>
       <SearchBox>
@@ -39,7 +53,7 @@ const HomeScreen: React.FC = () => {
           value={query}
           onChange={handleInputChange as any}
         />
-        <Button title={'Search'} onPress={() => setQuery(query)} />
+        <Button title={'Search'} onPress={handleSearchPress} />
       </SearchBox>
       {loading && <ActivityIndicator size={'large'} />}
 
@@ -69,6 +83,7 @@ const SearchBox = styled.View`
 
 const InputField = styled.TextInput`
   flex: 1;
-  border: 1px sold #ccc;
+  border-width: 1px;
+  border-color: #ccc;
   margin-right: 10px;
 `;
