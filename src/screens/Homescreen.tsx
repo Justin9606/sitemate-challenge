@@ -1,10 +1,10 @@
-import React, {useState, useEffect} from 'react';
+import React, {useState, useEffect, useRef} from 'react';
 import {
   ActivityIndicator,
   FlatList,
   Alert,
   Text,
-  Button,
+  Animated,
   TouchableOpacity,
 } from 'react-native';
 import styled from 'styled-components/native';
@@ -30,6 +30,8 @@ const HomeScreen: React.FC = () => {
   const debouncedQuery = useDebounce(query, 300); // Debounced query
   const navigation = useNavigation<HomeScreenNavigationProp>();
 
+  const inputWidthAnim = useRef(new Animated.Value(1)).current; // Initial width scale for the input
+
   const {data, loading, error} = useApiRequest<{articles: Article[]}>(
     '/everything',
     {
@@ -44,24 +46,37 @@ const HomeScreen: React.FC = () => {
     }
   }, [error]);
 
+  useEffect(() => {
+    Animated.timing(inputWidthAnim, {
+      toValue: query ? 0.9 : 1, // Shrink to 90% if there's text, expand to 100% if not
+      useNativeDriver: false, // Width animation can't use native driver
+      duration: 300,
+    }).start();
+  }, [query]);
+
+  const handleClearPress = () => {
+    setQuery('');
+  };
+
   // Filter out articles with title '[Removed]'
   const filteredArticles = data?.articles.filter(
     article => article.title !== '[Removed]',
   );
 
-  const handleArticlePress = (title: string, url: string) => {
-    navigation.navigate('WebView', {title, url});
-  };
-
   return (
     <Container>
       <SearchBox>
-        <StyledInput
+        <AnimatedInput
           placeholder="Search for news..."
           value={query}
           onChangeText={setQuery}
+          style={{flex: inputWidthAnim}}
         />
-        <Button title="Search" onPress={() => setQuery(query)} />
+        {query.length > 0 && (
+          <ClearButton onPress={handleClearPress}>
+            <ClearText>Clear</ClearText>
+          </ClearButton>
+        )}
       </SearchBox>
       {loading && <ActivityIndicator size="large" />}
       {!loading && !error && filteredArticles && (
@@ -71,7 +86,12 @@ const HomeScreen: React.FC = () => {
           renderItem={({item}) => {
             return (
               <TouchableOpacity
-                onPress={() => handleArticlePress(item.title, item.url)}>
+                onPress={() =>
+                  navigation.navigate('WebView', {
+                    title: item.title,
+                    url: item.url,
+                  })
+                }>
                 <ArticleItem article={item} />
               </TouchableOpacity>
             );
@@ -97,12 +117,20 @@ const Container = styled.View`
 
 const SearchBox = styled.View`
   flex-direction: row;
+  align-items: center;
   margin-bottom: 20px;
 `;
 
 const StyledInput = styled.TextInput`
-  flex: 1;
   border: 1px solid #ccc;
   padding: 10px;
-  margin-right: 10px;
 `;
+const ClearButton = styled.TouchableOpacity`
+  margin-left: 10px;
+`;
+const ClearText = styled.Text`
+  color: #007aff;
+  font-size: 16px;
+`;
+
+const AnimatedInput = Animated.createAnimatedComponent(StyledInput);
