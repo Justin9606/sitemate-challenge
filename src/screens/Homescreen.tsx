@@ -15,15 +15,16 @@ import ArticleItem from '../components/ArticleItem';
 import {Article} from '../types';
 // Custom hook
 import useApiRequest from '../hooks/useApiRequest';
+import useDebounce from '../hooks/useDebounce';
 
 const HomeScreen: React.FC = () => {
   const [query, setQuery] = useState<string>('');
-  const [searchQuery, setSearchQuery] = useState<string>('');
+  const debouncedQuery = useDebounce(query, 300); // Debounced query
 
   const {data, loading, error} = useApiRequest<{articles: Article[]}>(
     '/everything',
     {
-      q: searchQuery || 'everything',
+      q: debouncedQuery || 'everything', // Default to 'everything' if searchQuery is empty
       apiKey: 'ddb7bd6495e7436f9bed691b844c0a4c',
     },
   );
@@ -34,14 +35,6 @@ const HomeScreen: React.FC = () => {
     }
   }, [error]);
 
-  const handleSearchPress = () => {
-    if (query.trim()?.length === 0) {
-      Alert.alert('Oops!', 'Please enter some text to search', [{text: 'Ok'}]);
-      return;
-    }
-    setSearchQuery(query);
-  };
-
   return (
     <Container>
       <SearchBox>
@@ -50,8 +43,7 @@ const HomeScreen: React.FC = () => {
           value={query}
           onChangeText={setQuery}
         />
-
-        <Button title="Search" onPress={handleSearchPress} />
+        <Button title="Search" onPress={() => setQuery(query)} />
       </SearchBox>
       {loading && <ActivityIndicator size="large" />}
       {!loading && !error && data && (
