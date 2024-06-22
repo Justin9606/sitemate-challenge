@@ -1,54 +1,70 @@
-import React, {useEffect, useState} from 'react';
-import {ActivityIndicator, FlatList, Button, Alert} from 'react-native';
+import React, {useState, useEffect} from 'react';
+import {
+  ActivityIndicator,
+  FlatList,
+  Alert,
+  Text,
+  Button,
+  TextInput,
+} from 'react-native';
 import styled from 'styled-components/native';
 
-//custom hook
-import useApiRequest from '../hooks/useApiRequest';
-//re-usable component (see components folder)
+// Reusable component (see components folder)
 import ArticleItem from '../components/ArticleItem';
-//types from Article.ts
+// Types from Article.ts
 import {Article} from '../types';
+// Custom hook
+import useApiRequest from '../hooks/useApiRequest';
 
 const HomeScreen: React.FC = () => {
   const [query, setQuery] = useState<string>('');
-  const {data, loading, error} = useApiRequest<{article: Article[]}>(
+  const [searchQuery, setSearchQuery] = useState<string>('');
+
+  const {data, loading, error} = useApiRequest<{articles: Article[]}>(
     '/everything',
-    {q: query},
+    {
+      q: searchQuery || 'everything',
+      apiKey: 'ddb7bd6495e7436f9bed691b844c0a4c',
+    },
   );
 
-  //showing alert if there is an error
   useEffect(() => {
     if (error) {
-      Alert.alert(
-        'Oops!',
-        'Something went wrong. Please check your internet connection and try again later.',
-      );
+      Alert.alert('Oops!', error, [{text: 'OK'}]);
     }
   }, [error]);
 
-  //handler for text input change
-  const handleInputChange = (text: string) => {
-    setQuery(text);
+  const handleSearchPress = () => {
+    if (query.trim().length === 0) {
+      Alert.alert('Input Error', 'Please enter a search term.', [{text: 'OK'}]);
+      return;
+    }
+    setSearchQuery(query);
   };
 
   return (
     <Container>
       <SearchBox>
-        <InputField
-          placeholder={'Search for news...'}
+        <StyledInput
+          placeholder="Search for news..."
           value={query}
-          onChange={handleInputChange as any}
+          onChangeText={setQuery}
         />
-        <Button title={'Search'} onPress={() => setQuery(query)} />
-      </SearchBox>
-      {loading && <ActivityIndicator size={'large'} />}
 
-      {!loading && !error && (
+        <Button title="Search" onPress={handleSearchPress} />
+      </SearchBox>
+      {loading && <ActivityIndicator size="large" />}
+      {!loading && !error && data && (
         <FlatList
-          data={data?.article}
-          keyExtractor={item => item.url}
-          renderItem={({item}) => <ArticleItem article={item} />}
+          data={data.articles}
+          keyExtractor={(item, index) => item.url + index}
+          renderItem={({item}) => {
+            return <ArticleItem article={item} />;
+          }}
         />
+      )}
+      {!loading && !error && (!data || data.articles.length === 0) && (
+        <Text>No articles found</Text>
       )}
     </Container>
   );
@@ -67,8 +83,9 @@ const SearchBox = styled.View`
   margin-bottom: 20px;
 `;
 
-const InputField = styled.TextInput`
+const StyledInput = styled(TextInput)`
   flex: 1;
-  border: 1px sold #ccc;
+  border: 1px solid #ccc;
+  padding: 10px;
   margin-right: 10px;
 `;
