@@ -3,3 +3,8 @@ export type Article = {
   description: string;
   url: string;
 };
+
+export type RootStackParamList = {
+  Articles: undefined;
+  WebView: {title: string; url: string};
+};

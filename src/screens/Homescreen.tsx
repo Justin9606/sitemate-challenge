@@ -4,26 +4,36 @@ import {
   FlatList,
   Alert,
   Text,
-  TextInput,
+  Button,
+  TouchableOpacity,
 } from 'react-native';
 import styled from 'styled-components/native';
+import {useNavigation} from '@react-navigation/native';
+import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 
 // Reusable component (see components folder)
 import ArticleItem from '../components/ArticleItem';
 // Types from Article.ts
 import {Article} from '../types';
+import {RootStackParamList} from '../types';
 // Custom hook
 import useApiRequest from '../hooks/useApiRequest';
 import useDebounce from '../hooks/useDebounce';
 
+type HomeScreenNavigationProp = NativeStackNavigationProp<
+  RootStackParamList,
+  'Articles'
+>;
+
 const HomeScreen: React.FC = () => {
   const [query, setQuery] = useState<string>('');
   const debouncedQuery = useDebounce(query, 300); // Debounced query
+  const navigation = useNavigation<HomeScreenNavigationProp>();
 
   const {data, loading, error} = useApiRequest<{articles: Article[]}>(
     '/everything',
     {
-      q: debouncedQuery || 'everything',
+      q: debouncedQuery || 'everything', // Default to 'everything' if searchQuery is empty
       apiKey: 'ddb7bd6495e7436f9bed691b844c0a4c',
     },
   );
@@ -39,6 +49,10 @@ const HomeScreen: React.FC = () => {
     article => article.title !== '[Removed]',
   );
 
+  const handleArticlePress = (title: string, url: string) => {
+    navigation.navigate('WebView', {title, url});
+  };
+
   return (
     <Container>
       <SearchBox>
@@ -47,6 +61,7 @@ const HomeScreen: React.FC = () => {
           value={query}
           onChangeText={setQuery}
         />
+        <Button title="Search" onPress={() => setQuery(query)} />
       </SearchBox>
       {loading && <ActivityIndicator size="large" />}
       {!loading && !error && filteredArticles && (
@@ -54,7 +69,12 @@ const HomeScreen: React.FC = () => {
           data={filteredArticles}
           keyExtractor={(item, index) => item.url + index}
           renderItem={({item}) => {
-            return <ArticleItem article={item} />;
+            return (
+              <TouchableOpacity
+                onPress={() => handleArticlePress(item.title, item.url)}>
+                <ArticleItem article={item} />
+              </TouchableOpacity>
+            );
           }}
         />
       )}
@@ -80,8 +100,9 @@ const SearchBox = styled.View`
   margin-bottom: 20px;
 `;
 
-const StyledInput = styled(TextInput)`
+const StyledInput = styled.TextInput`
   flex: 1;
   border: 1px solid #ccc;
   padding: 10px;
+  margin-right: 10px;
 `;
