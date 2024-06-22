@@ -4,7 +4,6 @@ import {
   FlatList,
   Alert,
   Text,
-  Button,
   TextInput,
 } from 'react-native';
 import styled from 'styled-components/native';
@@ -24,7 +23,7 @@ const HomeScreen: React.FC = () => {
   const {data, loading, error} = useApiRequest<{articles: Article[]}>(
     '/everything',
     {
-      q: debouncedQuery || 'everything', // Default to 'everything' if searchQuery is empty
+      q: debouncedQuery || 'everything',
       apiKey: 'ddb7bd6495e7436f9bed691b844c0a4c',
     },
   );
@@ -35,6 +34,11 @@ const HomeScreen: React.FC = () => {
     }
   }, [error]);
 
+  // Filter out articles with title '[Removed]'
+  const filteredArticles = data?.articles.filter(
+    article => article.title !== '[Removed]',
+  );
+
   return (
     <Container>
       <SearchBox>
@@ -43,21 +47,22 @@ const HomeScreen: React.FC = () => {
           value={query}
           onChangeText={setQuery}
         />
-        <Button title="Search" onPress={() => setQuery(query)} />
       </SearchBox>
       {loading && <ActivityIndicator size="large" />}
-      {!loading && !error && data && (
+      {!loading && !error && filteredArticles && (
         <FlatList
-          data={data.articles}
+          data={filteredArticles}
           keyExtractor={(item, index) => item.url + index}
           renderItem={({item}) => {
             return <ArticleItem article={item} />;
           }}
         />
       )}
-      {!loading && !error && (!data || data.articles.length === 0) && (
-        <Text>No articles found</Text>
-      )}
+      {!loading &&
+        !error &&
+        (!filteredArticles || filteredArticles.length === 0) && (
+          <Text>No articles found</Text>
+        )}
     </Container>
   );
 };
@@ -79,5 +84,4 @@ const StyledInput = styled(TextInput)`
   flex: 1;
   border: 1px solid #ccc;
   padding: 10px;
-  margin-right: 10px;
 `;
